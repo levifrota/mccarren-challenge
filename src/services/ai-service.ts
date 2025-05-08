@@ -1,4 +1,4 @@
-import OpenAi from 'openai';
+import Groq from "groq-sdk";
 
 export interface CompanyProfile {
   company_name: string;
@@ -12,57 +12,48 @@ export interface CompanyProfile {
 
 const apiKey = import.meta.env.VITE_OPENAI_KEY;
 
-console.log('API KEY: ', apiKey);
-
-
-let openai: OpenAi | null = null;
-
-openai = new OpenAi({
-  apiKey: apiKey,
+const groq = new Groq({
+  apiKey,
   dangerouslyAllowBrowser: true,
 });
 
 export async function generateCompanyProfile(companyUrl: string): Promise<CompanyProfile> {
-  if (!openai) {
-    throw new Error('OpenAI API not initialized');
+  if (!groq) {
+    throw new Error('AI API not initialized');
   }
 
   try {
-      try {
-        const response = await openai.chat.completions.create({
-          model: "gpt-4o",
+        const response = await groq.chat.completions.create({
+          model: "llama3-70b-8192",
           messages: [
             {
               role: "system",
               content: `You are a helpful assistant that analyzes company websites and creates structured profiles. Respond with JSON, following the structure below: 
               {
   "company_name": "",
-  "website": "",
-  "description": "",
-  "service_lines": [
+  "service_line": [
     "service 1",
     "service 2",
   ],
-  "tier_1_keywords": [
+  "company_description": "",
+  "tier1_keywords": [
     "keyword 1",
     "keyword 2",
   ],
-  "tier_2_keywords": [
+  "tier2_keywords": [
     "keyword 1",
     "keyword 2",
   ],
-  "contacts": {
-    "emails": [],
-    "points_of_contact": []
-  }
+  "emails": [],
+  "poc": []
 }`
             },
             {
               role: "user",
-              content: `Generate a company profile in JSON format for the website: ${companyUrl}. Include company name, service lines, description, tier 1 keywords (that the company would use to search for government opportunities), tier 2 keywords (that they might use), and leave emails and points of contact empty for user input.`
+              content: `Generate a company profile in JSON format for the website: ${companyUrl}. Include company name, service lines, description, tier 1 keywords (that the company would use to search for government opportunities), tier 2 keywords (that they might use), and leave emails and points of contact empty for user input. `
             }
           ],
-          response_format: { "type": "json_object" }
+          response_format: { type: "json_object" }
         });
 
         const content = response.choices[0]?.message?.content;
@@ -75,25 +66,20 @@ export async function generateCompanyProfile(companyUrl: string): Promise<Compan
 
           const validatedProfile: CompanyProfile = {
             company_name: typeof parsedData.company_name === 'string' ? parsedData.company_name : '',
-            service_line: Array.isArray(parsedData.service_lines) ? parsedData.service_lines : [],
-            company_description: typeof parsedData.description === 'string' ? parsedData.description : '',
-            tier1_keywords: Array.isArray(parsedData.tier_1_keywords) ? parsedData.tier_1_keywords : [],
-            tier2_keywords: Array.isArray(parsedData.tier_2_keywords)? parsedData.tier_2_keywords : [],
-            emails: Array.isArray(parsedData.contacts.emails)? parsedData.contacts.emails : [],
-            poc: Array.isArray(parsedData.contacts.points_of_contact)? parsedData.contacts.points_of_contact : [],
+            service_line: Array.isArray(parsedData.service_line) ? parsedData.service_line : [],
+            company_description: typeof parsedData.company_description === 'string' ? parsedData.company_description : '',
+            tier1_keywords: Array.isArray(parsedData.tier1_keywords) ? parsedData.tier1_keywords : [],
+            tier2_keywords: Array.isArray(parsedData.tier2_keywords)? parsedData.tier2_keywords : [],
+            emails: Array.isArray(parsedData.emails)? parsedData.emails : [],
+            poc: Array.isArray(parsedData.poc)? parsedData.poc : [],
           };
 
           return validatedProfile;
         } catch (error) {
           console.error("Error parsing AI response:", error);
           throw error;
-        }
-
+        }      
       } catch (error) {
-        console.error("Error generating company profile:", error);
-        throw error;
-      }
-    } catch (error) {
       console.error('Error generating company profile:', error);
       throw new Error('Failed to generate company profile');
     }

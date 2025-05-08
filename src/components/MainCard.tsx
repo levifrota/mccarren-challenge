@@ -1,26 +1,17 @@
-import * as React from "react"
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { Button } from "./ui/button"
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-// import { Label } from "@/components/ui/label"
-// import {
-//   Select,
-//   SelectContent,
-//   SelectItem,
-//   SelectTrigger,
-//   SelectValue,
-// } from "@/components/ui/select"
-import { generateCompanyProfile } from '@/services/ai-service'
-import type { CompanyProfile } from '@/services/ai-service'
+} from "./ui/card"
+import { Input } from "./ui/input"
+import { Textarea } from "./ui/textarea"
+import { generateCompanyProfile } from '../services/ai-service'
+import type { CompanyProfile } from '../services/ai-service'
 
 const emptyProfile: CompanyProfile = {
   company_name: '',
@@ -64,26 +55,31 @@ export default function MainCard() {
       setProfile(generatedProfile);
       setEditedProfile(generatedProfile);
 
-      const extractServiceLine = generatedProfile.service_line || '';
+      // Extract service lines from the generated profile
+      const serviceLineArray = Array.isArray(generatedProfile.service_line) 
+        ? generatedProfile.service_line 
+        : [];
 
       const tier1Keywords = Array.isArray(generatedProfile.tier1_keywords)
         ? generatedProfile.tier1_keywords
         : [];
 
+      // Generate additional service lines from tier1 keywords
       const additionalServiceLines = [
         ...new Set(
           tier1Keywords
-          .filter((keyword) => keyword && typeof keyword === 'string' && keyword.length > 5)
+          .filter((keyword: string) => keyword && typeof keyword === 'string' && keyword.length > 5)
           .slice(0, 2)
-          .map((keyword) => keyword.split(' ')
+          .map((keyword: string) => keyword.split(' ')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ')
           )
         )
       ];
 
-      setServiceLines([extractServiceLine, ...additionalServiceLines]);
-      setCurrentServiceLine(extractServiceLine);
+      // Combine all service lines
+      setServiceLines([...serviceLineArray, ...additionalServiceLines]);
+      setCurrentServiceLine('');
       setLoading(false);
     } catch (error) {
       console.error('Error generating company profile:', error);
@@ -99,12 +95,35 @@ export default function MainCard() {
     };
   };
 
+  const removeServiceLine = (indexToRemove: number) => {
+    setServiceLines(serviceLines.filter((_, index) => index !== indexToRemove));
+  };
+
+  const toggleEditMode = () => {
+    if (editMode) {
+      setProfile(editedProfile);
+    } else {
+      setEditedProfile(profile || emptyProfile);
+    }
+    setEditMode(!editMode);
+  }
+
+  const updateEditedProfile = (field: keyof CompanyProfile, value: any) => {
+    setEditedProfile((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleArrayField = (field: keyof CompanyProfile, value: string) => {
+    const values = value.split(',').map((item) => item.trim()).filter(item => item !== '');
+    updateEditedProfile(field, values);
+  };
 
   return (
     <Card className="mb-8 p-6 bg-card rounded-lg shadow-md">
       <CardHeader>
-        <CardTitle>Generate Company Profile</CardTitle>
-        <CardDescription>Generate a profile for your company in one click</CardDescription>
+        <CardTitle>Insert a company website URL</CardTitle>
       </CardHeader>
       <CardContent>
         <Input
@@ -116,6 +135,7 @@ export default function MainCard() {
         <Button
           onClick={generateProfile}
           disabled={loading}
+          className=" mt-4"
         >
           {loading ? 'Generating...' : 'Generate Profile'}
         </Button>
@@ -125,12 +145,12 @@ export default function MainCard() {
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">{profile.company_name}</h2>
-                <button
+                <Button
                   onClick={toggleEditMode}
-                  className="bg-secondary text-secondary-foreground px-4 py-2 rounded-md hover:bg-secondary/90 transition-colors"
+                  className="bg-secondary px-4 py-2 rounded-md hover:bg-secondary/90 "
                 >
                   {editMode ? 'Save Changes' : 'Edit Profile'}
-                </button>
+                </Button>
               </div>
 
               {/* Service Lines */}
@@ -138,9 +158,18 @@ export default function MainCard() {
                 <h3 className="text-lg font-semibold mb-2">Service Lines</h3>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {serviceLines.map((service, index) => (
-                    <span key={index} className="bg-muted px-3 py-1 rounded-full text-sm">
-                      {service}
-                    </span>
+                    <div key={index} className="bg-muted px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                      <span>{service}</span>
+                      {editMode && (
+                        <Button 
+                          onClick={() => removeServiceLine(index)}
+                          className="bg-amber-50 ml-1 h-4 w-4 flex items-center justify-center rounded-full"
+                          aria-label="Remove service line"
+                        >
+                          x
+                        </Button>
+                      )}
+                    </div>
                   ))}
                 </div>
                 {editMode && (
@@ -152,12 +181,12 @@ export default function MainCard() {
                       placeholder="Add service line"
                       className="flex-1 p-2 border border-input rounded-md text-sm"
                     />
-                    <button
+                    <Button
                       onClick={addServiceLine}
                       className="bg-primary text-primary-foreground px-3 py-1 rounded-md text-sm"
                     >
                       Add
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -166,7 +195,7 @@ export default function MainCard() {
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-2">Company Description</h3>
                 {editMode ? (
-                  <textarea
+                  <Textarea
                     value={editedProfile.company_description}
                     onChange={(e) => updateEditedProfile('company_description', e.target.value)}
                     className="w-full p-3 border border-input rounded-md min-h-[100px]"
@@ -176,12 +205,12 @@ export default function MainCard() {
                 )}
               </div>
 
-              {/* Keywords */}
+              {/* Tier 1 and Tier 2 Keywords */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Tier 1 Keywords</h3>
                   {editMode ? (
-                    <textarea
+                    <Textarea
                       value={editedProfile.tier1_keywords.join(', ')}
                       onChange={(e) => handleArrayField('tier1_keywords', e.target.value)}
                       placeholder="Enter keywords separated by commas"
@@ -189,7 +218,7 @@ export default function MainCard() {
                     />
                   ) : (
                     <div className="flex flex-wrap gap-2">
-                      {profile.tier1_keywords.map((keyword, index) => (
+                      {Array.isArray(profile.tier1_keywords) && profile.tier1_keywords.map((keyword: string, index: number) => (
                         <span key={index} className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
                           {keyword}
                         </span>
@@ -200,7 +229,7 @@ export default function MainCard() {
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Tier 2 Keywords</h3>
                   {editMode ? (
-                    <textarea
+                    <Textarea
                       value={editedProfile.tier2_keywords.join(', ')}
                       onChange={(e) => handleArrayField('tier2_keywords', e.target.value)}
                       placeholder="Enter keywords separated by commas"
@@ -208,8 +237,8 @@ export default function MainCard() {
                     />
                   ) : (
                     <div className="flex flex-wrap gap-2">
-                      {profile.tier2_keywords.map((keyword, index) => (
-                        <span key={index} className="bg-secondary/10 text-secondary-foreground px-3 py-1 rounded-full text-sm">
+                      {Array.isArray(profile.tier2_keywords) && profile.tier2_keywords.map((keyword: string, index: number) => (
+                        <span key={index} className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
                           {keyword}
                         </span>
                       ))}
@@ -223,7 +252,7 @@ export default function MainCard() {
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Email Contacts</h3>
                   {editMode ? (
-                    <textarea
+                    <Textarea
                       value={editedProfile.emails.join(', ')}
                       onChange={(e) => handleArrayField('emails', e.target.value)}
                       placeholder="Enter emails separated by commas"
@@ -233,7 +262,7 @@ export default function MainCard() {
                     <div>
                       {profile.emails.length > 0 ? (
                         <ul className="list-disc pl-5">
-                          {profile.emails.map((email, index) => (
+                          {profile.emails.map((email: string, index: number) => (
                             <li key={index}>{email}</li>
                           ))}
                         </ul>
@@ -246,7 +275,7 @@ export default function MainCard() {
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Points of Contact</h3>
                   {editMode ? (
-                    <textarea
+                    <Textarea
                       value={editedProfile.poc.join(', ')}
                       onChange={(e) => handleArrayField('poc', e.target.value)}
                       placeholder="Enter contacts separated by commas"
@@ -256,7 +285,7 @@ export default function MainCard() {
                     <div>
                       {profile.poc.length > 0 ? (
                         <ul className="list-disc pl-5">
-                          {profile.poc.map((contact, index) => (
+                          {profile.poc.map((contact: string, index: number) => (
                             <li key={index}>{contact}</li>
                           ))}
                         </ul>
@@ -271,10 +300,6 @@ export default function MainCard() {
           </div>
         )}
       </CardContent>
-      {/* <CardFooter className="flex justify-between">
-        <Button variant="outline">Cancel</Button>
-        <Button>Deploy</Button>
-      </CardFooter> */}
     </Card>
   )
 }
