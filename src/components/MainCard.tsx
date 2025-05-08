@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from "react"
 import { Button } from "./ui/button"
 import {
@@ -43,6 +41,7 @@ export default function MainCard() {
     try {
       new URL(url);
     } catch (e) {
+      console.error('Invalid URL:', e);
       setError('Please enter a valid URL (e.g., https://example.com)');
       return;
     }
@@ -108,7 +107,9 @@ export default function MainCard() {
     setEditMode(!editMode);
   }
 
-  const updateEditedProfile = (field: keyof CompanyProfile, value: any) => {
+  const updateEditedProfile = (field: keyof CompanyProfile, value: unknown) => {
+    console.log('value: ', typeof value);
+    
     setEditedProfile((prev) => ({
       ...prev,
       [field]: value,
@@ -139,6 +140,7 @@ export default function MainCard() {
         >
           {loading ? 'Generating...' : 'Generate Profile'}
         </Button>
+        {error && <p className="mt-2 text-destructive">{error}</p>}
 
         {profile && (
           <div className="bg-card rounded-lg shadow-md overflow-hidden">
