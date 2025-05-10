@@ -1,4 +1,3 @@
-import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import type { CompanyProfile } from '../services/ai-service';
 import TagEditor from './TagEditor';
@@ -34,6 +33,8 @@ export default function TierKeywords({editMode, editedProfile, removeArrayField,
             <div className='flex flex-wrap gap-2 mb-2'>
               {editedProfile.tier1_keywords.map((kw, i) => (
                 <TagEditor
+                  editedProfile={editedProfile}
+                  profileValue='tier1_keywords'
                   item={i}
                   keyword={kw}
                   removeArrayField={removeArrayField}
@@ -86,26 +87,13 @@ export default function TierKeywords({editMode, editedProfile, removeArrayField,
           <>
             <div className='flex flex-wrap gap-2 mb-2'>
               {editedProfile.tier2_keywords.map((kw, i) => (
-                <div
-                  className='bg-muted px-3 py-1 rounded-full text-sm flex items-center gap-2'
-                  key={i}
-                >
-                  <span>{kw}</span>
-
-                  <Button
-                    onClick={() =>
-                      removeArrayField('tier2_keywords', i)
-                    }
-                    className='ml-1 h-4 w-4 flex items-center justify-center rounded-full hover:border-neutral-950'
-                    aria-label='Remove keyword'
-                    style={{
-                      backgroundColor: 'var(--muted)',
-                      color: 'black',
-                    }}
-                  >
-                    x
-                  </Button>
-                </div>
+                <TagEditor
+                editedProfile={editedProfile}
+                profileValue='tier2_keywords'
+                item={i}
+                keyword={kw}
+                removeArrayField={removeArrayField}
+              />
               ))}
             </div>
 

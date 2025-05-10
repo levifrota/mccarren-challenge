@@ -29,8 +29,8 @@ export async function generateCompanyProfile(
   try {
     // Call Groq API to generate the profile
     const response = await groq.chat.completions.create({
-      // Using Llama 3
-      model: 'llama3-70b-8192',
+      // Using Llama 3.3
+      model: 'llama-3.3-70b-versatile',
       messages: [
         {
           role: 'system',
