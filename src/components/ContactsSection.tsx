@@ -1,6 +1,8 @@
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import type { CompanyProfile } from '../services/ai-service';
+import { EmailSchema } from '../schema/email';
+import { useState } from 'react';
 
 interface TierKeywordsProps {
   editMode: boolean
@@ -21,6 +23,27 @@ interface TierKeywordsProps {
 }
 
 export default function ContactsSection({editMode, editedProfile, removeArrayField, setEmailsInput, setPocInput, profile, handleArrayField, emailsInput, pocInput}: TierKeywordsProps) {
+  const [emailError, setEmailError] = useState<string | null>(null);
+  
+  const validateAndAddEmail = () => {    
+    const trimmedEmail = emailsInput.trim();
+    // Check if there's an email
+    if (!trimmedEmail) {
+      return;
+    }
+
+    try {
+      // Validate email using zod schema
+      EmailSchema.parse({ emails: trimmedEmail });
+      
+      handleArrayField('emails', trimmedEmail);
+      setEmailsInput('');
+      setEmailError(null);
+    } catch (error) {
+      const zodError = (error as { issues: { message: string }[] }).issues[0];
+      setEmailError(zodError.message);
+    }
+  };
   return (
     <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
       {/* Email */}
@@ -56,17 +79,18 @@ export default function ContactsSection({editMode, editedProfile, removeArrayFie
               onKeyDown={(e) => {
                 if (e.key === ',') {
                   e.preventDefault();
-                  handleArrayField('emails', emailsInput);
-                  setEmailsInput('');
+                  validateAndAddEmail();
                 }
               }}
               onBlur={() => {
-                handleArrayField('emails', emailsInput);
-                setEmailsInput('');
+                validateAndAddEmail();
               }}
               placeholder='Enter emails separated by commas'
-              className='w-full p-3 border border-input rounded-md'
+              className={`w-full p-3 border rounded-md ${emailError ? 'border-red-500' : 'border-input'}`}
             />
+            {emailError && (
+              <p className="text-red-500 text-sm mt-1">{emailError}</p>
+            )}
           </>
         ) : (
           <div>
